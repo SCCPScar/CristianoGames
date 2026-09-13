@@ -140,12 +140,29 @@ class _TetrisScreenState extends State<TetrisScreen> {
               child: Center(
                 child: AspectRatio(
                   aspectRatio: boardCols / boardRows,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: controller.rotate,
-                    onPanUpdate: _handlePanUpdate,
-                    onPanEnd: _handlePanEnd,
-                    child: CustomPaint(painter: TetrisBoardPainter(controller)),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF4a4a4a), Color(0xFF1a1a1a)],
+                      ),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black54, blurRadius: 8, offset: Offset(0, 4)),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: controller.rotate,
+                        onPanUpdate: _handlePanUpdate,
+                        onPanEnd: _handlePanEnd,
+                        child: CustomPaint(painter: TetrisBoardPainter(controller)),
+                      ),
+                    ),
                   ),
                 ),
               ),

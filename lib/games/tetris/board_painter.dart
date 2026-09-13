@@ -48,19 +48,76 @@ class TetrisBoardPainter extends CustomPainter {
     }
   }
 
+  /// Draws a chunky, beveled "candy block" like classic Tetris skins: a
+  /// mid-tone face with a lighter highlight on the top-left edges and a
+  /// darker shadow on the bottom-right edges, all clipped to a rounded
+  /// square so blocks still read as one connected piece.
   void _drawBlock(Canvas canvas, Rect rect, TetrominoType type, {required bool filled}) {
     final style = tetrominoStyles[type]!;
-    final inset = rect.deflate(1.5);
-    final paint = Paint()..color = style.color;
-    canvas.drawRRect(RRect.fromRectAndRadius(inset, const Radius.circular(3)), paint);
+    final inset = rect.deflate(1.0);
+    final rrect = RRect.fromRectAndRadius(inset, const Radius.circular(4));
+    final bevel = inset.shortestSide * 0.16;
 
+    canvas.save();
+    canvas.clipRRect(rrect);
+
+    canvas.drawRect(inset, Paint()..color = style.color);
+
+    final light = Color.lerp(style.color, Colors.white, 0.45)!;
+    final dark = Color.lerp(style.color, Colors.black, 0.45)!;
+
+    final topHighlight = Path()
+      ..moveTo(inset.left, inset.top)
+      ..lineTo(inset.right, inset.top)
+      ..lineTo(inset.right - bevel, inset.top + bevel)
+      ..lineTo(inset.left + bevel, inset.top + bevel)
+      ..close();
+    final leftHighlight = Path()
+      ..moveTo(inset.left, inset.top)
+      ..lineTo(inset.left + bevel, inset.top + bevel)
+      ..lineTo(inset.left + bevel, inset.bottom - bevel)
+      ..lineTo(inset.left, inset.bottom)
+      ..close();
+    final bottomShadow = Path()
+      ..moveTo(inset.left, inset.bottom)
+      ..lineTo(inset.left + bevel, inset.bottom - bevel)
+      ..lineTo(inset.right - bevel, inset.bottom - bevel)
+      ..lineTo(inset.right, inset.bottom)
+      ..close();
+    final rightShadow = Path()
+      ..moveTo(inset.right, inset.top)
+      ..lineTo(inset.right - bevel, inset.top + bevel)
+      ..lineTo(inset.right - bevel, inset.bottom - bevel)
+      ..lineTo(inset.right, inset.bottom)
+      ..close();
+
+    canvas.drawPath(topHighlight, Paint()..color = light.withValues(alpha: 0.8));
+    canvas.drawPath(leftHighlight, Paint()..color = light.withValues(alpha: 0.55));
+    canvas.drawPath(bottomShadow, Paint()..color = dark.withValues(alpha: 0.55));
+    canvas.drawPath(rightShadow, Paint()..color = dark.withValues(alpha: 0.7));
+
+    canvas.drawRect(
+      inset.deflate(bevel),
+      Paint()..color = style.color,
+    );
+
+    canvas.restore();
+
+    final fg = legibleForegroundOn(style.color);
     final textPainter = TextPainter(
       text: TextSpan(
         text: style.letter,
         style: TextStyle(
-          color: legibleForegroundOn(style.color),
-          fontSize: rect.height * 0.5,
+          color: fg,
+          fontSize: rect.height * 0.48,
           fontWeight: FontWeight.bold,
+          shadows: [
+            Shadow(
+              color: fg == Colors.white ? Colors.black54 : Colors.white54,
+              blurRadius: 2,
+              offset: const Offset(0, 1),
+            ),
+          ],
         ),
       ),
       textDirection: TextDirection.ltr,
