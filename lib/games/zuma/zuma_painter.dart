@@ -16,8 +16,7 @@ class ZumaPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     controller.updateBoardSize(size);
 
-    canvas.drawRect(Offset.zero & size, Paint()..color = AppColors.background);
-
+    _drawTempleBackground(canvas, size);
     _drawTrack(canvas, size);
     _drawGoal(canvas, size);
 
@@ -35,11 +34,45 @@ class ZumaPainter extends CustomPainter {
     }
 
     _drawShooter(canvas, size);
+
+    for (final popup in controller.popups) {
+      _drawPopup(canvas, popup);
+    }
   }
 
   static const _stoneBase = Color(0xFF433d33);
   static const _stoneGroove = Color(0xFF221f19);
   static const _stoneRim = Color(0xFF6b6152);
+  static const _templeDeep = Color(0xFF0e0c09);
+  static const _templeMid = Color(0xFF211d16);
+
+  /// A dim stone-pit backdrop with faint carved rings radiating from the
+  /// center, so the spiral reads as a temple well rather than a flat panel.
+  void _drawTempleBackground(Canvas canvas, Size size) {
+    final center = Offset(size.width * controller.path.center.dx, size.height * controller.path.center.dy);
+    final maxR = size.longestSide * 0.85;
+
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()
+        ..shader = RadialGradient(
+          center: Alignment(
+            controller.path.center.dx * 2 - 1,
+            controller.path.center.dy * 2 - 1,
+          ),
+          radius: 1.1,
+          colors: const [_templeMid, _templeDeep],
+        ).createShader(Offset.zero & size),
+    );
+
+    final ringPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.035)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    for (var i = 1; i <= 5; i++) {
+      canvas.drawCircle(center, maxR * i / 5, ringPaint);
+    }
+  }
 
   void _drawTrack(Canvas canvas, Size size) {
     final points = controller.path.pixelPoints(size);
@@ -186,10 +219,13 @@ class ZumaPainter extends CustomPainter {
     }
   }
 
+  /// A carved stone idol pedestal at the spiral's center, with two small
+  /// "eye" nubs as a nod to the frog statue from the original game.
   void _drawShooter(Canvas canvas, Size size) {
     final pos = controller.shooterPosition;
-    final pedestalR = controller.ballRadius * 1.7;
-    canvas.drawCircle(pos, pedestalR + 4, Paint()..color = _stoneRim);
+    final pedestalR = controller.ballRadius * 1.9;
+
+    canvas.drawCircle(pos, pedestalR + 5, Paint()..color = _stoneRim);
     canvas.drawCircle(
       pos,
       pedestalR,
@@ -199,11 +235,37 @@ class ZumaPainter extends CustomPainter {
           colors: const [Color(0xFF57503f), _stoneBase],
         ).createShader(Rect.fromCircle(center: pos, radius: pedestalR)),
     );
-    _drawBall(canvas, pos, controller.ballRadius, controller.currentBall);
 
-    final nextPos = pos + Offset(0, controller.ballRadius * 2.4);
-    _drawBall(canvas, nextPos, controller.ballRadius * 0.6, controller.nextBall);
+    final eyeOffset = Offset(pedestalR * 0.62, -pedestalR * 0.55);
+    for (final side in [-1.0, 1.0]) {
+      final eyePos = pos + Offset(eyeOffset.dx * side, eyeOffset.dy);
+      canvas.drawCircle(eyePos, pedestalR * 0.22, Paint()..color = const Color(0xFF1a1712));
+      canvas.drawCircle(eyePos, pedestalR * 0.11, Paint()..color = OkabeIto.bluishGreen.withValues(alpha: 0.85));
+    }
+
+    _drawBall(canvas, pos, controller.ballRadius, controller.currentBall);
   }
+
+  void _drawPopup(Canvas canvas, ScorePopup popup) {
+    final t = (popup.age / _popupLifetimeForPaint).clamp(0.0, 1.0);
+    final pos = popup.position + Offset(0, -t * 46);
+    final opacity = 1.0 - t;
+    final tp = TextPainter(
+      text: TextSpan(
+        text: '+${popup.amount}',
+        style: TextStyle(
+          color: OkabeIto.yellow.withValues(alpha: opacity),
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          shadows: [Shadow(color: Colors.black.withValues(alpha: opacity), blurRadius: 3)],
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tp.paint(canvas, pos - Offset(tp.width / 2, tp.height / 2));
+  }
+
+  static const _popupLifetimeForPaint = 0.9;
 
   @override
   bool shouldRepaint(covariant ZumaPainter oldDelegate) => true;

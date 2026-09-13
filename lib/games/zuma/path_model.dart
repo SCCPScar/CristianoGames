@@ -1,15 +1,18 @@
+import 'dart:math';
 import 'dart:ui';
 
 /// The curved track balls travel along, stored as normalized (0..1, 0..1)
-/// points so it scales to any screen size. A simple zigzag/S-shape, as
-/// suggested for an MVP — from the bottom-left "spawn" end up to a goal
-/// hole near the top-center.
+/// points so it scales to any screen size.
 class GamePath {
   final List<Offset> _points;
   final List<double> _cumulative;
   final double totalLength;
 
-  GamePath._(this._points, this._cumulative, this.totalLength);
+  /// Normalized center of the spiral — where the shooter sits, like the
+  /// frog on its pedestal in the middle of the classic Zuma temple.
+  final Offset center;
+
+  GamePath._(this._points, this._cumulative, this.totalLength, this.center);
 
   factory GamePath.classic() {
     const waypoints = [
@@ -40,7 +43,35 @@ class GamePath {
       cumulative.add(cumulative[i - 1] + (points[i] - points[i - 1]).distance);
     }
 
-    return GamePath._(points, cumulative, cumulative.last);
+    return GamePath._(points, cumulative, cumulative.last, const Offset(0.5, 0.9));
+  }
+
+  /// A spiral winding inward to a center goal, like the original Zuma's
+  /// stone temple track — balls enter from the outer ring and spiral in
+  /// toward the skull hole next to the frog's pedestal.
+  factory GamePath.spiral() {
+    const center = Offset(0.5, 0.46);
+    const turns = 2.0;
+    const rxOuter = 0.42, rxInner = 0.10;
+    const ryOuter = 0.31, ryInner = 0.07;
+    const startAngle = -pi / 2;
+    const samples = 480;
+
+    final points = <Offset>[];
+    for (var i = 0; i <= samples; i++) {
+      final t = i / samples;
+      final angle = startAngle + t * turns * 2 * pi;
+      final rx = rxOuter + (rxInner - rxOuter) * t;
+      final ry = ryOuter + (ryInner - ryOuter) * t;
+      points.add(Offset(center.dx + rx * cos(angle), center.dy + ry * sin(angle)));
+    }
+
+    final cumulative = <double>[0];
+    for (var i = 1; i < points.length; i++) {
+      cumulative.add(cumulative[i - 1] + (points[i] - points[i - 1]).distance);
+    }
+
+    return GamePath._(points, cumulative, cumulative.last, center);
   }
 
   /// Normalized (0..1, 0..1) position at [distance] along the path.

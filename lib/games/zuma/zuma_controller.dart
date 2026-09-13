@@ -39,15 +39,26 @@ class Projectile {
   Projectile({required this.type, required this.position, required this.velocity});
 }
 
+/// A short-lived "+N" floating score label, spawned where a run pops.
+class ScorePopup {
+  final Offset position;
+  final int amount;
+  double age = 0;
+  ScorePopup({required this.position, required this.amount});
+}
+
+const double _popupLifetime = 0.9;
+
 /// Owns all Zuma game state: the ball chain, the shooter, projectiles,
 /// scoring, levels and timing. The UI (ZumaScreen) only reads this and
 /// calls fire()/pause()/resume()/nextLevel()/reset().
 class ZumaController extends ChangeNotifier {
-  final GamePath path = GamePath.classic();
+  final GamePath path = GamePath.spiral();
   final Random _random = Random();
 
   final List<ChainBall> chain = [];
   final List<Projectile> projectiles = [];
+  final List<ScorePopup> popups = [];
 
   Size? boardSize;
   int levelIndex = 0;
@@ -83,7 +94,7 @@ class ZumaController extends ChangeNotifier {
   Offset get shooterPosition {
     final size = boardSize;
     if (size == null) return Offset.zero;
-    return Offset(size.width * 0.5, size.height * 0.90);
+    return Offset(size.width * path.center.dx, size.height * path.center.dy);
   }
 
   BallType _randomType() => BallType.values[_random.nextInt(BallType.values.length)];
@@ -97,6 +108,7 @@ class ZumaController extends ChangeNotifier {
     final cfg = zumaLevels[levelIndex];
     chain.clear();
     projectiles.clear();
+    popups.clear();
     final headStart = (cfg.ballCount - 1) * _spacing + 0.05;
     for (var i = 0; i < cfg.ballCount; i++) {
       chain.add(ChainBall(type: _randomType(), distance: headStart - i * _spacing));
@@ -145,7 +157,15 @@ class ZumaController extends ChangeNotifier {
     _lastTickTime = now;
     _advanceChain(dt.clamp(0.0, 0.05));
     _advanceProjectiles(dt.clamp(0.0, 0.05));
+    _advancePopups(dt.clamp(0.0, 0.05));
     notifyListeners();
+  }
+
+  void _advancePopups(double dt) {
+    for (final p in popups) {
+      p.age += dt;
+    }
+    popups.removeWhere((p) => p.age > _popupLifetime);
   }
 
   void _advanceChain(double dt) {
@@ -248,9 +268,12 @@ class ZumaController extends ChangeNotifier {
       }
       final runLength = right - left + 1;
       if (runLength < 3) break;
+      final popupPos = path.pixelAt(chain[(left + right) ~/ 2].distance, boardSize!);
       chain.removeRange(left, right + 1);
       comboStep++;
-      score += runLength * 10 * comboStep;
+      final gained = runLength * 10 * comboStep;
+      score += gained;
+      popups.add(ScorePopup(position: popupPos, amount: gained));
       idx = left - 1;
     }
     if (comboStep > 0) {
