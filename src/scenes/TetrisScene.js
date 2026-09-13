@@ -97,7 +97,7 @@ export class TetrisScene extends Phaser.Scene {
       dragging = false;
       const totalMove = Math.abs(pointer.downX - pointer.upX) + Math.abs(pointer.downY - pointer.upY);
       const velY = pointer.velocity ? pointer.velocity.y : 0;
-      if (totalMove < 12) {
+      if (totalMove < 20) {
         this.game_.rotate();
       } else if (velY > 900) {
         this.game_.hardDrop();
