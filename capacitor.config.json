@@ -1,0 +1,9 @@
+{
+  "appId": "com.cristiano.arcadedopai",
+  "appName": "Arcade do Pai",
+  "webDir": "dist",
+  "backgroundColor": "#121212",
+  "android": {
+    "backgroundColor": "#121212"
+  }
+}
