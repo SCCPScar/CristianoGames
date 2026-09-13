@@ -126,10 +126,12 @@ class _ZumaScreenState extends State<ZumaScreen> {
                     gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Color(0xFF6b6152), Color(0xFF23201a)],
+                      colors: [Color(0xFF241a3d), Color(0xFF0c0916)],
                     ),
-                    boxShadow: const [
-                      BoxShadow(color: Colors.black54, blurRadius: 10, offset: Offset(0, 4)),
+                    border: Border.all(color: const Color(0xFF7ee0f0), width: 1),
+                    boxShadow: [
+                      BoxShadow(color: const Color(0xFF7ee0f0).withValues(alpha: 0.25), blurRadius: 14),
+                      const BoxShadow(color: Colors.black54, blurRadius: 10, offset: Offset(0, 4)),
                     ],
                   ),
                   child: ClipRRect(
