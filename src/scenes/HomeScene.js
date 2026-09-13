@@ -109,15 +109,15 @@ export class HomeScene extends Phaser.Scene {
     g.strokeRoundedRect(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight, 18);
     container.add(g);
 
-    drawIcon(container, accent);
+    drawIcon(container, accent, -40);
 
     container.add(
-      this.add.text(0, 28, title, { fontFamily: 'system-ui, sans-serif', fontSize: '24px', fontStyle: 'bold', color: AppColors.textPrimary }).setOrigin(0.5),
+      this.add.text(0, 20, title, { fontFamily: 'system-ui, sans-serif', fontSize: '24px', fontStyle: 'bold', color: AppColors.textPrimary }).setOrigin(0.5),
     );
 
     const highScore = getHighScore(game);
     const recordText = this.add
-      .text(0, 56, `Recorde: ${highScore}`, { fontFamily: 'system-ui, sans-serif', fontSize: '14px', color: AppColors.textSecondary })
+      .text(0, 52, `Recorde: ${highScore}`, { fontFamily: 'system-ui, sans-serif', fontSize: '14px', color: AppColors.textSecondary })
       .setOrigin(0.5);
     container.add(recordText);
     container.recordText = recordText;
@@ -137,7 +137,7 @@ export class HomeScene extends Phaser.Scene {
     this._cards.push(container);
   }
 
-  _drawTetrisIcon(container, accent) {
+  _drawTetrisIcon(container, accent, offsetY = 0) {
     const g = this.add.graphics();
     g.fillStyle(hexToNum(accent), 1);
     const barWidth = 14;
@@ -145,18 +145,18 @@ export class HomeScene extends Phaser.Scene {
     const heights = [26, 42, 34];
     heights.forEach((h, i) => {
       const x = (i - 1) * (barWidth + gap);
-      g.fillRoundedRect(x - barWidth / 2, -30 - h / 2 + 30, barWidth, h, 3);
+      g.fillRoundedRect(x - barWidth / 2, offsetY - h / 2, barWidth, h, 3);
     });
     container.add(g);
   }
 
-  _drawZumaIcon(container, accent) {
+  _drawZumaIcon(container, accent, offsetY = 0) {
     const g = this.add.graphics();
     g.fillStyle(hexToNum(accent), 1);
     const radii = [8, 10, 10, 8];
     let x = -36;
     for (const r of radii) {
-      g.fillCircle(x, -5, r);
+      g.fillCircle(x, offsetY, r);
       x += r * 2 + 4;
     }
     container.add(g);
