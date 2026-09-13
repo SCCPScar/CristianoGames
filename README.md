@@ -1,4 +1,4 @@
-# Arcade do Pai
+# CrisTetris
 
 App com dois jogos clássicos em um só lugar: **Tetris** e um
 marble-popper estilo **Zuma**. Feito para uma pessoa com daltonismo

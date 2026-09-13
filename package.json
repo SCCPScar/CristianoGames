@@ -1,8 +1,8 @@
 {
-  "name": "arcade-do-pai",
+  "name": "cristetris",
   "version": "1.0.0",
   "private": true,
-  "description": "Tetris e Zuma num único app, com acessibilidade para daltonismo.",
+  "description": "CrisTetris: Tetris e Zuma num único app, com acessibilidade para daltonismo.",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Arcade do Pai</string>
-    <string name="title_activity_main">Arcade do Pai</string>
+    <string name="app_name">CrisTetris</string>
+    <string name="title_activity_main">CrisTetris</string>
     <string name="package_name">com.cristiano.arcadedopai</string>
     <string name="custom_url_scheme">com.cristiano.arcadedopai</string>
 </resources>

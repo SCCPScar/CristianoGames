@@ -3,15 +3,15 @@ import { makeButton, showModal } from './ui.js';
 
 /// Shared pause dialog for both games: Pausado / Continuar / Sair.
 export function showPauseDialog(scene, { onResume, onExit }) {
-  const { panel, close } = showModal(scene, { panelWidth: 280, panelHeight: 220 });
+  const { panel, close, centerX, centerY, trackExtra } = showModal(scene, { panelWidth: 280, panelHeight: 220 });
 
   panel.add(
     scene.add.text(0, -80, '⏸  Pausado', { fontFamily: 'system-ui, sans-serif', fontSize: '22px', fontStyle: 'bold', color: AppColors.textPrimary }).setOrigin(0.5),
   );
-  panel.add(
+  trackExtra(
     makeButton(scene, {
-      x: 0,
-      y: -10,
+      x: centerX,
+      y: centerY - 10,
       width: 220,
       label: '▶  Continuar',
       bgColor: AppColors.accent,
@@ -21,10 +21,10 @@ export function showPauseDialog(scene, { onResume, onExit }) {
       },
     }),
   );
-  panel.add(
+  trackExtra(
     makeButton(scene, {
-      x: 0,
-      y: 55,
+      x: centerX,
+      y: centerY + 55,
       width: 220,
       label: 'Sair',
       filled: false,
@@ -43,7 +43,7 @@ export function showPauseDialog(scene, { onResume, onExit }) {
 /// with isVictory + onNext, for "level complete" too.
 export function showGameOverDialog(scene, { isVictory = false, score, bestScore, isNewRecord = false, onPlayAgain, onMenu, onNext = null }) {
   const height = onNext ? 340 : 290;
-  const { panel, close } = showModal(scene, { panelWidth: 300, panelHeight: height });
+  const { panel, close, centerX, centerY, trackExtra } = showModal(scene, { panelWidth: 300, panelHeight: height });
 
   const titleColor = isVictory ? OkabeIto.yellow : AppColors.danger;
   const titleIcon = isVictory ? '🏆' : '😕';
@@ -76,10 +76,10 @@ export function showGameOverDialog(scene, { isVictory = false, score, bestScore,
 
   y += 46;
   if (onNext) {
-    panel.add(
+    trackExtra(
       makeButton(scene, {
-        x: 0,
-        y,
+        x: centerX,
+        y: centerY + y,
         width: 240,
         label: 'Próximo nível',
         bgColor: AppColors.accent,
@@ -91,10 +91,10 @@ export function showGameOverDialog(scene, { isVictory = false, score, bestScore,
     );
     y += 58;
   }
-  panel.add(
+  trackExtra(
     makeButton(scene, {
-      x: 0,
-      y,
+      x: centerX,
+      y: centerY + y,
       width: 240,
       label: 'Jogar de novo',
       bgColor: onNext ? OkabeIto.orange : AppColors.accent,
@@ -105,10 +105,10 @@ export function showGameOverDialog(scene, { isVictory = false, score, bestScore,
     }),
   );
   y += 58;
-  panel.add(
+  trackExtra(
     makeButton(scene, {
-      x: 0,
-      y,
+      x: centerX,
+      y: centerY + y,
       width: 240,
       label: 'Menu',
       filled: false,

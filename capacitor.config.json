@@ -1,6 +1,6 @@
 {
   "appId": "com.cristiano.arcadedopai",
-  "appName": "Arcade do Pai",
+  "appName": "CrisTetris",
   "webDir": "dist",
   "backgroundColor": "#121212",
   "android": {

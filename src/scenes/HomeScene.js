@@ -14,8 +14,9 @@ export class HomeScene extends Phaser.Scene {
   create() {
     const { width } = this.scale;
     this.cameras.main.setBackgroundColor(AppColors.background);
+    this._cards = [];
 
-    this.add.text(width / 2, 56, 'Arcade do Pai', {
+    this.add.text(width / 2, 56, 'CrisTetris', {
       fontFamily: 'system-ui, sans-serif',
       fontSize: '28px',
       fontStyle: 'bold',
@@ -32,22 +33,27 @@ export class HomeScene extends Phaser.Scene {
     const btn = this.add.circle(width - 40, 56, 22, hexToNum(AppColors.surface)).setInteractive({ useHandCursor: true });
     this.add.text(width - 40, 56, '⚙', { fontFamily: 'system-ui, sans-serif', fontSize: '22px', color: AppColors.textPrimary }).setOrigin(0.5);
     btn.on('pointerup', () => this._openSettings());
+    this._gearButton = btn;
   }
 
   /// Redraws the whole dialog on every toggle — simpler than patching
   /// individual buttons in place, and this dialog is cheap to rebuild.
   _openSettings() {
-    const { panel, close } = showModal(this, { panelWidth: 280, panelHeight: 230 });
+    // The cards and gear icon sit underneath and must not react to clicks
+    // meant for the dialog's buttons while it's open — see showModal()'s
+    // blockers doc comment for why the overlay alone isn't enough.
+    const blockers = [this._gearButton, ...this._cards];
+    const { panel, close, centerX, centerY, trackExtra } = showModal(this, { panelWidth: 280, panelHeight: 230, blockers });
 
     panel.add(
       this.add.text(0, -85, '⚙  Configurações', { fontFamily: 'system-ui, sans-serif', fontSize: '19px', fontStyle: 'bold', color: AppColors.textPrimary }).setOrigin(0.5),
     );
 
     const soundOn = getSoundEnabled();
-    panel.add(
+    trackExtra(
       makeButton(this, {
-        x: 0,
-        y: -15,
+        x: centerX,
+        y: centerY - 15,
         width: 220,
         label: soundOn ? '🔊  Som: Ligado' : '🔈  Som: Desligado',
         bgColor: soundOn ? AppColors.accent : AppColors.surfaceHigh,
@@ -60,10 +66,10 @@ export class HomeScene extends Phaser.Scene {
     );
 
     const hapticsOn = getHapticsEnabled();
-    panel.add(
+    trackExtra(
       makeButton(this, {
-        x: 0,
-        y: 50,
+        x: centerX,
+        y: centerY + 50,
         width: 220,
         label: hapticsOn ? '📳  Vibração: Ligada' : '📴  Vibração: Desligada',
         bgColor: hapticsOn ? AppColors.accent : AppColors.surfaceHigh,
@@ -75,10 +81,10 @@ export class HomeScene extends Phaser.Scene {
       }),
     );
 
-    panel.add(
+    trackExtra(
       makeButton(this, {
-        x: 0,
-        y: 105,
+        x: centerX,
+        y: centerY + 105,
         width: 160,
         height: 44,
         label: 'Fechar',
@@ -128,6 +134,7 @@ export class HomeScene extends Phaser.Scene {
       this.scene.start(scene);
     });
     container.on('pointerout', () => container.setScale(1));
+    this._cards.push(container);
   }
 
   _drawTetrisIcon(container, accent) {
