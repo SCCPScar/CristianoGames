@@ -12,26 +12,30 @@ export class HomeScene extends Phaser.Scene {
   }
 
   create() {
-    const { width } = this.scale;
+    const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor(AppColors.background);
     this._cards = [];
 
-    this.add.text(width / 2, 56, 'CrisTetris', {
+    this.add.text(width / 2, 40, 'CrisTetris', {
       fontFamily: 'system-ui, sans-serif',
-      fontSize: '28px',
+      fontSize: '26px',
       fontStyle: 'bold',
       color: AppColors.textPrimary,
     }).setOrigin(0.5);
 
     this._addSettingsButton();
-    this._addGameCard({ y: 340, title: 'TETRIS', accent: OkabeIto.skyBlue, game: GameId.TETRIS, scene: 'Tetris', drawIcon: this._drawTetrisIcon.bind(this) });
-    this._addGameCard({ y: 520, title: 'ZUMA', accent: OkabeIto.reddishPurple, game: GameId.ZUMA, scene: 'Zuma', drawIcon: this._drawZumaIcon.bind(this) });
+
+    const cardsY = 40 + (height - 40) / 2 + 6;
+    const gap = 40;
+    const cardWidth = 270;
+    this._addGameCard({ x: width / 2 - cardWidth / 2 - gap / 2, y: cardsY, title: 'TETRIS', accent: OkabeIto.skyBlue, game: GameId.TETRIS, scene: 'Tetris', drawIcon: this._drawTetrisIcon.bind(this) });
+    this._addGameCard({ x: width / 2 + cardWidth / 2 + gap / 2, y: cardsY, title: 'ZUMA', accent: OkabeIto.reddishPurple, game: GameId.ZUMA, scene: 'Zuma', drawIcon: this._drawZumaIcon.bind(this) });
   }
 
   _addSettingsButton() {
     const { width } = this.scale;
-    const btn = this.add.circle(width - 40, 56, 22, hexToNum(AppColors.surface)).setInteractive({ useHandCursor: true });
-    this.add.text(width - 40, 56, '⚙', { fontFamily: 'system-ui, sans-serif', fontSize: '22px', color: AppColors.textPrimary }).setOrigin(0.5);
+    const btn = this.add.circle(width - 40, 40, 20, hexToNum(AppColors.surface)).setInteractive({ useHandCursor: true });
+    this.add.text(width - 40, 40, '⚙', { fontFamily: 'system-ui, sans-serif', fontSize: '20px', color: AppColors.textPrimary }).setOrigin(0.5);
     btn.on('pointerup', () => this._openSettings());
     this._gearButton = btn;
   }
@@ -95,12 +99,11 @@ export class HomeScene extends Phaser.Scene {
     );
   }
 
-  _addGameCard({ y, title, accent, game, scene, drawIcon }) {
-    const { width } = this.scale;
-    const cardWidth = 260;
-    const cardHeight = 150;
+  _addGameCard({ x, y, title, accent, game, scene, drawIcon }) {
+    const cardWidth = 270;
+    const cardHeight = 220;
 
-    const container = this.add.container(width / 2, y);
+    const container = this.add.container(x, y);
 
     const g = this.add.graphics();
     g.fillStyle(hexToNum(AppColors.surface), 1);

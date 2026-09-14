@@ -14,32 +14,31 @@ export class TetrisScene extends Phaser.Scene {
     this._dragDx = 0;
     this._dragDy = 0;
 
-    const { width } = this.scale;
     this.cameras.main.setBackgroundColor(AppColors.background);
 
+    this._computeLayout();
+
     this.add
-      .text(20, 20, '←', { fontFamily: 'system-ui, sans-serif', fontSize: '24px', color: AppColors.textPrimary })
+      .text(20, 16, '←', { fontFamily: 'system-ui, sans-serif', fontSize: '24px', color: AppColors.textPrimary })
       .setInteractive({ useHandCursor: true })
       .on('pointerup', () => this.scene.start('Home'));
 
-    this.hudText = this.add.text(width / 2, 24, '', {
+    this.hudText = this.add.text(this.sidebarX, 20, '', {
       fontFamily: 'system-ui, sans-serif',
-      fontSize: '16px',
+      fontSize: '20px',
       fontStyle: 'bold',
       color: AppColors.textPrimary,
-    }).setOrigin(0.5);
+    });
 
     this.add
-      .text(width - 24, 20, '⏸', { fontFamily: 'system-ui, sans-serif', fontSize: '24px', color: AppColors.textPrimary })
+      .text(this.scale.width - 24, 16, '⏸', { fontFamily: 'system-ui, sans-serif', fontSize: '24px', color: AppColors.textPrimary })
       .setOrigin(0.5, 0)
       .setInteractive({ useHandCursor: true })
       .on('pointerup', () => this._openPauseMenu());
 
-    this.previewLabel = this.add.text(width / 2, 60, '', { fontFamily: 'system-ui, sans-serif', fontSize: '13px', color: AppColors.textSecondary }).setOrigin(0.5);
+    this.previewLabel = this.add.text(this.sidebarX, 90, '', { fontFamily: 'system-ui, sans-serif', fontSize: '13px', color: AppColors.textSecondary });
     this.previewGraphics = this.add.graphics();
     this.previewTexts = [];
-
-    this._computeLayout();
 
     this.boardGraphics = this.add.graphics();
     this.pieceGraphics = this.add.graphics();
@@ -65,16 +64,18 @@ export class TetrisScene extends Phaser.Scene {
   }
 
   _computeLayout() {
-    const { width, height } = this.scale;
-    const top = 96;
-    const bottom = 130;
-    const availWidth = width - 40;
+    const { height } = this.scale;
+    const top = 14;
+    const bottom = 14;
+    const boardLeft = 64;
+    const availWidth = 240;
     const availHeight = height - top - bottom;
     this.cellSize = Math.min(availWidth / BOARD_COLS, availHeight / BOARD_ROWS);
     this.boardWidth = this.cellSize * BOARD_COLS;
     this.boardHeight = this.cellSize * BOARD_ROWS;
-    this.boardX = (width - this.boardWidth) / 2;
-    this.boardY = top;
+    this.boardX = boardLeft;
+    this.boardY = (height - this.boardHeight) / 2;
+    this.sidebarX = this.boardX + this.boardWidth + 46;
   }
 
   _addBoardInput() {
@@ -130,8 +131,10 @@ export class TetrisScene extends Phaser.Scene {
 
   _addControls() {
     const { width, height } = this.scale;
-    const y = height - 55;
-    const spacing = width / 5;
+    const y = height - 90;
+    const left = this.sidebarX;
+    const right = width - 24;
+    const spacing = (right - left) / 5;
     const labels = [
       { icon: '←', action: () => this.game_.moveLeft() },
       { icon: '⟳', action: () => this.game_.rotate() },
@@ -140,9 +143,9 @@ export class TetrisScene extends Phaser.Scene {
       { icon: '⇊', action: () => { this.game_.hardDrop(); this._syncBoardText(); } },
     ];
     labels.forEach((entry, i) => {
-      const x = spacing * i + spacing / 2;
-      const bg = this.add.circle(x, y, 28, hexToNum(AppColors.surface)).setInteractive({ useHandCursor: true });
-      this.add.text(x, y, entry.icon, { fontFamily: 'system-ui, sans-serif', fontSize: '22px', color: AppColors.textPrimary }).setOrigin(0.5);
+      const x = left + spacing * i + spacing / 2;
+      const bg = this.add.circle(x, y, 32, hexToNum(AppColors.surface)).setInteractive({ useHandCursor: true });
+      this.add.text(x, y, entry.icon, { fontFamily: 'system-ui, sans-serif', fontSize: '26px', color: AppColors.textPrimary }).setOrigin(0.5);
       bg.on('pointerdown', () => bg.setScale(0.9));
       bg.on('pointerup', () => {
         bg.setScale(1);
@@ -153,23 +156,24 @@ export class TetrisScene extends Phaser.Scene {
   }
 
   _updateHud() {
-    this.hudText.setText(`Pontos: ${this.game_.score} · Nível: ${this.game_.level}`);
+    this.hudText.setText(`Pontos: ${this.game_.score}\nNível: ${this.game_.level}`);
 
     this.previewGraphics.clear();
     this.previewTexts.forEach((t) => t.destroy());
     this.previewTexts = [];
     const preview = this.game_.nextPreview;
-    const size = 26;
-    const gap = 8;
-    this.previewLabel.setText('Próximas:').setPosition(16, 60).setOrigin(0, 0.5);
-    const startX = 16 + this.previewLabel.width + 10;
+    const size = 34;
+    const gap = 10;
+    const startX = this.sidebarX;
+    const y = 130;
+    this.previewLabel.setText('Próximas:').setPosition(startX, y - size / 2 - 14);
     preview.forEach((type, i) => {
       const style = tetrominoStyles[type];
       const x = startX + i * (size + gap);
       this.previewGraphics.fillStyle(hexToNum(style.color), 1);
-      this.previewGraphics.fillRoundedRect(x, 60 - size / 2, size, size, 6);
+      this.previewGraphics.fillRoundedRect(x, y - size / 2, size, size, 6);
       const t = this.add
-        .text(x + size / 2, 60, style.letter, { fontFamily: 'system-ui, sans-serif', fontSize: '14px', fontStyle: 'bold', color: legibleForegroundOn(style.color) })
+        .text(x + size / 2, y, style.letter, { fontFamily: 'system-ui, sans-serif', fontSize: '17px', fontStyle: 'bold', color: legibleForegroundOn(style.color) })
         .setOrigin(0.5);
       this.previewTexts.push(t);
     });
@@ -270,7 +274,7 @@ export class TetrisScene extends Phaser.Scene {
       text.setText(style.letter).setPosition(x + size / 2, y + size / 2).setColor(legibleForegroundOn(style.color)).setVisible(true);
     });
 
-    this.hudText.setText(`Pontos: ${this.game_.score} · Nível: ${this.game_.level}`);
+    this.hudText.setText(`Pontos: ${this.game_.score}\nNível: ${this.game_.level}`);
   }
 
   _openPauseMenu() {
