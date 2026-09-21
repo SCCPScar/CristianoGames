@@ -6,9 +6,18 @@
 export class GamePath {
   constructor() {
     this.center = { x: 0.5, y: 0.46 };
+    // 2.5 packed the loops in too tight (rxInner/ryInner stayed the same,
+    // so the same radial range now has to fit more windings); back off to
+    // give each loop visible breathing room from its neighbors.
     const turns = 2.0;
-    const rxOuter = 0.42, rxInner = 0.10;
-    const ryOuter = 0.31, ryInner = 0.07;
+    const rxOuter = 0.45, rxInner = 0.10;
+    // Kept a bit shy of the board's actual top/bottom edge (rather than
+    // 0.31) so a ball rendered at its full display radius, plus the top
+    // and bottom border art (now a fair bit taller now that it's a real,
+    // undistorted crop instead of a squashed placeholder), never gets
+    // clipped by the board bounds — landscape boards are short enough
+    // vertically that this margin matters.
+    const ryOuter = 0.23, ryInner = 0.07;
     const startAngle = -Math.PI / 2;
     const samples = 480;
 
@@ -20,17 +29,40 @@ export class GamePath {
       const ry = ryOuter + (ryInner - ryOuter) * t;
       points.push({ x: this.center.x + rx * Math.cos(angle), y: this.center.y + ry * Math.sin(angle) });
     }
+    this._points = points;
 
+    // Arc length starts out measured in normalized (aspect-ratio-agnostic)
+    // units as a safe default. setPixelSize() below rebuilds this table in
+    // true pixel units once the board's real width/height are known —
+    // ball spacing needs to be measured in real pixels, not this default,
+    // or a wide-short (landscape) board stretches the x-axis so much more
+    // than the y-axis that equal steps of "distance" land visually much
+    // closer together on the path's more vertical stretches than on its
+    // horizontal ones, making the chain look uneven/overlapping.
+    this._buildCumulative(1, 1);
+  }
+
+  _buildCumulative(width, height) {
+    const points = this._points;
     const cumulative = [0];
     for (let i = 1; i < points.length; i++) {
-      const dx = points[i].x - points[i - 1].x;
-      const dy = points[i].y - points[i - 1].y;
+      const dx = (points[i].x - points[i - 1].x) * width;
+      const dy = (points[i].y - points[i - 1].y) * height;
       cumulative.push(cumulative[i - 1] + Math.hypot(dx, dy));
     }
-
-    this._points = points;
     this._cumulative = cumulative;
     this.totalLength = cumulative[cumulative.length - 1];
+    this._pixelWidth = width;
+    this._pixelHeight = height;
+  }
+
+  /// Rebuilds the arc-length table for the board's actual pixel
+  /// dimensions, so a fixed "distance" gap between chain balls maps to a
+  /// consistent real pixel gap everywhere along the path. A no-op if the
+  /// size hasn't changed.
+  setPixelSize(width, height) {
+    if (this._pixelWidth === width && this._pixelHeight === height) return;
+    this._buildCumulative(width, height);
   }
 
   /// Normalized (0..1, 0..1) position at [distance] along the path.

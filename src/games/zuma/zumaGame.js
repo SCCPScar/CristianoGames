@@ -11,7 +11,6 @@ export const ZUMA_LEVELS = [
   { ballCount: 22, speed: 0.065 },
 ];
 
-const SPACING = 0.05;
 const PROJECTILE_SPEED = 1100.0; // pixels/sec
 const POPUP_LIFETIME = 0.9; // seconds
 
@@ -28,6 +27,12 @@ export class ZumaGame {
     this.chain = [];
     this.projectiles = [];
     this.popups = [];
+    // Transient one-shot visual events for the scene to consume: matched
+    // balls (for burst/particle effects) and projectile impacts (for a
+    // small hit flash). The scene drains these every frame; the model
+    // never reads them back, so it stays render-agnostic.
+    this._matchBursts = [];
+    this._impactFlashes = [];
 
     this.boardWidth = 0;
     this.boardHeight = 0;
@@ -42,7 +47,10 @@ export class ZumaGame {
 
     this.currentBall = randomBallType();
     this.nextBall = randomBallType();
-    this._setupLevel();
+    // _setupLevel() runs once the board's real pixel size is known (see
+    // setBoardSize) — ball spacing depends on ballRadius, which depends
+    // on board size, so setting the chain up any earlier would place
+    // balls using a meaningless fallback radius.
   }
 
   get levelNumber() {
@@ -58,8 +66,38 @@ export class ZumaGame {
     return Math.max(12, Math.min(20, Math.min(this.boardWidth, this.boardHeight) * 0.045));
   }
 
+  /// Real pixel gap (center-to-center) between chained balls — tied to
+  /// the rendered ball size so they read as evenly spaced everywhere
+  /// along the path, regardless of board aspect ratio.
+  get _ballSpacing() {
+    return this.ballRadius * 2.05;
+  }
+
   get shooterPosition() {
     return { x: this.boardWidth * this.path.center.x, y: this.boardHeight * this.path.center.y };
+  }
+
+  /// Fraction (0..1) of this level's balls already cleared, for a HUD
+  /// progress bar.
+  get levelProgress() {
+    const total = ZUMA_LEVELS[this.levelIndex].ballCount;
+    if (!total) return 0;
+    return Math.max(0, Math.min(1, 1 - this.chain.length / total));
+  }
+
+  /// Returns and clears the pending match-burst events (one per ball
+  /// removed by a match since the last drain).
+  drainMatchBursts() {
+    const events = this._matchBursts;
+    this._matchBursts = [];
+    return events;
+  }
+
+  /// Returns and clears the pending projectile-impact events.
+  drainImpactFlashes() {
+    const events = this._impactFlashes;
+    this._impactFlashes = [];
+    return events;
   }
 
   _setupLevel() {
@@ -67,9 +105,12 @@ export class ZumaGame {
     this.chain = [];
     this.projectiles = [];
     this.popups = [];
-    const headStart = (cfg.ballCount - 1) * SPACING + 0.05;
+    this._matchBursts = [];
+    this._impactFlashes = [];
+    const spacing = this._ballSpacing;
+    const headStart = cfg.ballCount * spacing;
     for (let i = 0; i < cfg.ballCount; i++) {
-      this.chain.push({ type: randomBallType(), distance: headStart - i * SPACING });
+      this.chain.push({ type: randomBallType(), distance: headStart - i * spacing });
     }
     this.isLevelComplete = false;
   }
@@ -77,6 +118,15 @@ export class ZumaGame {
   setBoardSize(width, height) {
     this.boardWidth = width;
     this.boardHeight = height;
+    // The chain-speed constants in ZUMA_LEVELS were tuned against the
+    // path's old aspect-ratio-agnostic arc length; rescale them by how
+    // much the real pixel arc length differs from that baseline, so a
+    // level still takes the same real time to cross the path it always
+    // did, regardless of screen aspect ratio.
+    const baselineLength = this.path.totalLength;
+    this.path.setPixelSize(width, height);
+    this._speedScale = this.path.totalLength / baselineLength;
+    this._setupLevel();
   }
 
   pause() {
@@ -100,14 +150,15 @@ export class ZumaGame {
 
   _advanceChain(dt) {
     if (this.chain.length === 0) return;
-    const speed = ZUMA_LEVELS[this.levelIndex].speed;
+    const speed = ZUMA_LEVELS[this.levelIndex].speed * this._speedScale;
+    const spacing = this._ballSpacing;
     this.chain[0].distance += speed * dt;
     if (this.chain[0].distance >= this.path.totalLength) {
       this._lose();
       return;
     }
     for (let i = 1; i < this.chain.length; i++) {
-      const target = this.chain[i - 1].distance - SPACING;
+      const target = this.chain[i - 1].distance - spacing;
       if (this.chain[i].distance < target) {
         this.chain[i].distance = Math.min(this.chain[i].distance + speed * dt, target);
       }
@@ -148,16 +199,22 @@ export class ZumaGame {
   }
 
   _tangentAtPixel(distance) {
-    const eps = 0.001;
+    // A couple of pixels — small relative to the path's overall shape,
+    // but comfortably larger than the ~pixel-per-sample resolution of the
+    // path's point table, so the two probes reliably land in different
+    // samples and give a well-defined direction.
+    const eps = 2;
     const a = this.path.pixelAt(Math.max(distance - eps, 0), this.boardWidth, this.boardHeight);
     const b = this.path.pixelAt(Math.min(distance + eps, this.path.totalLength), this.boardWidth, this.boardHeight);
     return { x: b.x - a.x, y: b.y - a.y };
   }
 
   _insertBall(proj, hitIndex) {
+    const spacing = this._ballSpacing;
     const hitBall = this.chain[hitIndex];
     const tangent = this._tangentAtPixel(hitBall.distance);
     const hitPixel = this.path.pixelAt(hitBall.distance, this.boardWidth, this.boardHeight);
+    this._impactFlashes.push({ position: hitPixel, type: proj.type });
     const toProjectile = { x: proj.position.x - hitPixel.x, y: proj.position.y - hitPixel.y };
     const dot = tangent.x * toProjectile.x + tangent.y * toProjectile.y;
     // Positive dot: projectile is on the goal-facing side of the hit ball,
@@ -166,16 +223,16 @@ export class ZumaGame {
 
     let newDist;
     if (insertIndex <= 0) {
-      newDist = this.chain.length > 0 ? this.chain[0].distance + SPACING : this.path.totalLength * 0.5;
+      newDist = this.chain.length > 0 ? this.chain[0].distance + spacing : this.path.totalLength * 0.5;
     } else if (insertIndex >= this.chain.length) {
-      newDist = this.chain[this.chain.length - 1].distance - SPACING;
+      newDist = this.chain[this.chain.length - 1].distance - spacing;
     } else {
-      newDist = this.chain[insertIndex - 1].distance - SPACING;
+      newDist = this.chain[insertIndex - 1].distance - spacing;
     }
 
     this.chain.splice(insertIndex, 0, { type: proj.type, distance: newDist });
     for (let i = insertIndex + 1; i < this.chain.length; i++) {
-      const maxAllowed = this.chain[i - 1].distance - SPACING;
+      const maxAllowed = this.chain[i - 1].distance - spacing;
       if (this.chain[i].distance > maxAllowed) this.chain[i].distance = maxAllowed;
     }
 
@@ -198,11 +255,17 @@ export class ZumaGame {
       const runLength = right - left + 1;
       if (runLength < 3) break;
       const popupPos = this.path.pixelAt(this.chain[Math.floor((left + right) / 2)].distance, this.boardWidth, this.boardHeight);
+      for (const removed of this.chain.slice(left, right + 1)) {
+        this._matchBursts.push({
+          type: removed.type,
+          position: this.path.pixelAt(removed.distance, this.boardWidth, this.boardHeight),
+        });
+      }
       this.chain.splice(left, runLength);
       comboStep++;
       const gained = runLength * 10 * comboStep;
       this.score += gained;
-      this.popups.push({ position: popupPos, amount: gained, age: 0 });
+      this.popups.push({ position: popupPos, amount: gained, age: 0, comboStep });
       idx = left - 1;
     }
     if (comboStep > 0) {

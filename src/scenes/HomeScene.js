@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { AppColors, OkabeIto, hexToNum } from '../shared/theme.js';
 import { GameId, getHighScore, getSoundEnabled, setSoundEnabled, getHapticsEnabled, setHapticsEnabled } from '../shared/storage.js';
 import { makeButton, showModal } from '../shared/ui.js';
+import { getSafeAreaInsets } from '../shared/safeArea.js';
+import { setOrientation } from '../shared/orientation.js';
 
 /// Home screen: app title, settings gear, and two large, shape-distinct
 /// cards to pick a game. Icons differ in silhouette (not just color) so
@@ -12,6 +14,7 @@ export class HomeScene extends Phaser.Scene {
   }
 
   create() {
+    setOrientation(this, 'landscape');
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor(AppColors.background);
     this._cards = [];
@@ -34,8 +37,10 @@ export class HomeScene extends Phaser.Scene {
 
   _addSettingsButton() {
     const { width } = this.scale;
-    const btn = this.add.circle(width - 40, 40, 20, hexToNum(AppColors.surface)).setInteractive({ useHandCursor: true });
-    this.add.text(width - 40, 40, '⚙', { fontFamily: 'system-ui, sans-serif', fontSize: '20px', color: AppColors.textPrimary }).setOrigin(0.5);
+    const safe = getSafeAreaInsets(this);
+    const cx = width - 40 - safe.right, cy = 40 + safe.top;
+    const btn = this.add.circle(cx, cy, 20, hexToNum(AppColors.surface)).setInteractive({ useHandCursor: true });
+    this.add.text(cx, cy, '⚙', { fontFamily: 'system-ui, sans-serif', fontSize: '20px', color: AppColors.textPrimary }).setOrigin(0.5);
     btn.on('pointerup', () => this._openSettings());
     this._gearButton = btn;
   }

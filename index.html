@@ -32,33 +32,10 @@
       max-width: 100%;
       max-height: 100%;
     }
-    #rotate-hint {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 100;
-      background: #121212;
-      color: #f5f5f5;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      font-family: system-ui, sans-serif;
-      padding: 24px;
-    }
-    #rotate-hint .icon { font-size: 56px; margin-bottom: 16px; }
-    @media (orientation: portrait) {
-      #rotate-hint { display: flex; }
-      #game { display: none; }
-    }
   </style>
 </head>
 <body>
   <div id="game"></div>
-  <div id="rotate-hint">
-    <div class="icon">↻</div>
-    <div>Gire o celular na horizontal para jogar</div>
-  </div>
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>
