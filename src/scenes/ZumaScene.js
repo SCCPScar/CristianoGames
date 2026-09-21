@@ -37,7 +37,7 @@ export class ZumaScene extends Phaser.Scene {
     this.load.image('ball_green', 'assets/zuma/ball_green.png');
     this.load.image('ball_purple', 'assets/zuma/ball_purple.png');
     this.load.image('ball_vermillion', 'assets/zuma/ball_vermillion.png');
-    this.load.image('panda_shooter', 'assets/zuma/panda.png');
+    this.load.image('panda_shooter', 'assets/zuma/panda_stone.png');
     this.load.image('stone_texture', 'assets/zuma/stone_texture.png');
     this.load.image('border_top', 'assets/zuma/border_top.png');
     this.load.image('border_bottom', 'assets/zuma/border_bottom.png');
@@ -114,11 +114,25 @@ export class ZumaScene extends Phaser.Scene {
       .on('pointerup', () => this.scene.start('Home'));
 
     this.add
-      .text(width - 22 - safe.right, 12 + safe.top, '⏸', { fontFamily: 'system-ui, sans-serif', fontSize: '22px', color: AppColors.textPrimary })
+      .text(width - 22 - safe.right, 12 + safe.top, '⏸', { fontFamily: 'system-ui, sans-serif', fontSize: '22px', color: AppColors.success })
       .setOrigin(0.5, 0)
       .setDepth(20)
       .setInteractive({ useHandCursor: true })
       .on('pointerup', () => this._openPauseMenu());
+
+    // A small carved-stone plaque behind the level/score block, so the
+    // HUD reads as part of the temple set instead of text floating loose
+    // over the background — same layered-fill trick as the shooter dais.
+    const plaqueW = 150, plaqueH = 46;
+    const plaqueX = width / 2 - plaqueW / 2;
+    const plaqueY = safe.top + 1;
+    const plaque = this.add.graphics().setDepth(15);
+    plaque.fillStyle(TRACK_STONE, 1);
+    plaque.fillRoundedRect(plaqueX, plaqueY, plaqueW, plaqueH, 10);
+    plaque.fillStyle(0x000000, 0.28);
+    plaque.fillRoundedRect(plaqueX + 2, plaqueY + plaqueH * 0.5, plaqueW - 4, plaqueH * 0.5 - 2, 8);
+    plaque.lineStyle(1.5, hexToNum(GOLD), 0.55);
+    plaque.strokeRoundedRect(plaqueX, plaqueY, plaqueW, plaqueH, 10);
 
     this.levelText = this.add
       .text(width / 2, 4 + safe.top, '', { fontFamily: 'system-ui, sans-serif', fontSize: '11px', fontStyle: 'bold', color: GOLD_LIGHT, letterSpacing: 1 })
@@ -246,24 +260,22 @@ export class ZumaScene extends Phaser.Scene {
 
     this.add.circle(abs.x, abs.y, platR * 1.2, hexToNum(GOLD_LIGHT), 0.1).setDepth(6.5).setBlendMode(Phaser.BlendModes.ADD);
 
-    // TEMP (diagnostic, not committed): panda hidden so the chain near
-    // the center is visible again — see if the platform/glow alone reads
-    // well, then decide whether to shrink/reposition the panda instead
-    // of dropping it for good.
-    const PANDA_VISIBLE = false;
-    if (PANDA_VISIBLE) {
-      const tex = this.textures.get('panda_shooter').getSourceImage();
-      const pandaWidth = r * 7.4;
-      const pandaHeight = pandaWidth * (tex.height / tex.width);
+    // Stone-carved panda, viewed from above (matching the board's own
+    // top-down camera) and reclining with its snout toward the right —
+    // wider and shorter than a sitting pose, so it reads as part of the
+    // dais instead of a tall cut-out standing on top of it.
+    const tex = this.textures.get('panda_shooter').getSourceImage();
+    const pandaWidth = r * 8.6;
+    const pandaHeight = pandaWidth * (tex.height / tex.width);
 
-      // Origin is placed at the panda's mouth (estimated fraction of the
-      // sprite) so its position directly IS the shooter/ball-spawn point.
-      this._panda = this.add
-        .image(abs.x, abs.y, 'panda_shooter')
-        .setOrigin(0.905, 0.5)
-        .setDisplaySize(pandaWidth, pandaHeight)
-        .setDepth(15);
-    }
+    // Origin is placed at the panda's snout (measured on the source art:
+    // ~98.5% across, ~46% down) so its position directly IS the
+    // shooter/ball-spawn point.
+    this._panda = this.add
+      .image(abs.x, abs.y, 'panda_shooter')
+      .setOrigin(0.985, 0.46)
+      .setDisplaySize(pandaWidth, pandaHeight)
+      .setDepth(15);
 
     this._shooterMouth = { x: abs.x, y: abs.y };
   }
@@ -347,7 +359,7 @@ export class ZumaScene extends Phaser.Scene {
     g.clear();
     g.fillStyle(hexToNum(AppColors.surfaceHigh), 0.8);
     g.fillRoundedRect(bx, by, barWidth, barHeight, 3);
-    g.fillStyle(hexToNum(GOLD), 1);
+    g.fillStyle(hexToNum(AppColors.success), 1);
     g.fillRoundedRect(bx, by, Math.max(4, barWidth * this.zGame.levelProgress), barHeight, 3);
 
     const type = this.zGame.nextBall;
@@ -428,7 +440,7 @@ export class ZumaScene extends Phaser.Scene {
     g.fillCircle(pos.x, pos.y, r);
     g.fillStyle(0x050308, 0.7);
     g.fillCircle(pos.x, pos.y, r * 0.7);
-    g.lineStyle(2, hexToNum(GOLD), 0.8);
+    g.lineStyle(2, hexToNum(AppColors.success), 0.8);
     g.strokeCircle(pos.x, pos.y, r);
     g.lineStyle(2.5, hexToNum(AppColors.danger), 1);
     g.strokeCircle(pos.x, pos.y, r - 3);
