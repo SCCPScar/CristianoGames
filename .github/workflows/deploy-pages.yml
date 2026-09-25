@@ -1,0 +1,47 @@
+name: Publicar no GitHub Pages
+
+on:
+  push:
+    branches: [claude/new-session-v0ythk, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one deploy runs at a time — a second push while one is still
+# building cancels the in-flight run rather than racing it.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      # The backend (backend/) isn't part of this static build — GitHub
+      # Pages only serves static files. The game still works without it,
+      # falling back to per-browser localStorage (see src/shared/storage.js);
+      # only cross-device score sync needs the backend hosted separately.
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
