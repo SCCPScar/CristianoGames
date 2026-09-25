@@ -39,20 +39,22 @@ export function showPauseDialog(scene, { onResume, onExit }) {
   return close;
 }
 
-/// Shared end-of-round dialog for both games. Used for "game over" and,
-/// with isVictory + onNext, for "level complete" too.
-export function showGameOverDialog(scene, { isVictory = false, score, bestScore, isNewRecord = false, onPlayAgain, onMenu, onNext = null }) {
+/// Shared end-of-round dialog. Used for "game over" and, with isVictory
+/// + onNext, for "level complete" (Tetris/Zuma). Turn-based games
+/// (Connect4, Sequence) don't have "levels", so they pass title/titleIcon
+/// explicitly instead of relying on the isVictory-derived wording.
+export function showGameOverDialog(scene, { isVictory = false, score, bestScore, isNewRecord = false, onPlayAgain, onMenu, onNext = null, title, titleIcon, titleColor }) {
   const height = onNext ? 340 : 290;
   const { panel, close, centerX, centerY, trackExtra } = showModal(scene, { panelWidth: 300, panelHeight: height });
 
-  const titleColor = isVictory ? OkabeIto.yellow : AppColors.danger;
-  const titleIcon = isVictory ? '🏆' : '😕';
-  const titleText = isVictory ? 'Nível completo!' : 'Fim de jogo';
+  const resolvedTitleColor = titleColor || (isVictory ? OkabeIto.yellow : AppColors.danger);
+  const resolvedTitleIcon = titleIcon || (isVictory ? '🏆' : '😕');
+  const titleText = title || (isVictory ? 'Nível completo!' : 'Fim de jogo');
 
   let y = -height / 2 + 40;
   panel.add(
     scene.add
-      .text(0, y, `${titleIcon}  ${titleText}`, { fontFamily: 'system-ui, sans-serif', fontSize: '21px', fontStyle: 'bold', color: titleColor })
+      .text(0, y, `${resolvedTitleIcon}  ${titleText}`, { fontFamily: 'system-ui, sans-serif', fontSize: '21px', fontStyle: 'bold', color: resolvedTitleColor })
       .setOrigin(0.5),
   );
   y += 44;

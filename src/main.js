@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { HomeScene } from './scenes/HomeScene.js';
 import { TetrisScene } from './scenes/TetrisScene.js';
 import { ZumaScene } from './scenes/ZumaScene.js';
+import { Connect4Scene } from './scenes/Connect4Scene.js';
+import { SequenceScene } from './scenes/SequenceScene.js';
 import { AppColors } from './shared/theme.js';
 import { LANDSCAPE_SIZE } from './shared/orientation.js';
 
@@ -19,5 +21,5 @@ new Phaser.Game({
     width: LANDSCAPE_SIZE.width,
     height: LANDSCAPE_SIZE.height,
   },
-  scene: [HomeScene, TetrisScene, ZumaScene],
+  scene: [HomeScene, TetrisScene, ZumaScene, Connect4Scene, SequenceScene],
 });

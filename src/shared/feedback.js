@@ -64,4 +64,11 @@ export const Feedback = {
     beep(220, 0.35, { type: 'sawtooth', gain: 0.14 });
     vibrate([30, 50, 30]);
   },
+  /// A specific pitch for [freq] — lets a game (e.g. the color-sequence
+  /// one) give each option its own distinct tone, an audio channel of
+  /// redundancy on top of color+shape, same principle as the rest of the
+  /// app's accessibility system.
+  tone(freq, duration = 0.22) {
+    beep(freq, duration, { type: 'triangle', gain: 0.2 });
+  },
 };
